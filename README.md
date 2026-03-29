@@ -7,12 +7,21 @@
 ```
 ParallelComputing/
 ├── README.md
-└── CPU/
-    ├── Makefile                          # 构建脚本
-    ├── simd_benchmark.cpp                # 基础SIMD性能测试
-    ├── advanced_simd_benchmark.cpp       # 高级SIMD性能测试  
-    ├── image_processing_simd.cpp         # 图像处理SIMD应用
-    └── SIMD_Performance_Report.md        # 详细性能分析报告
+├── CPU/
+│   ├── Makefile                          # 构建脚本
+│   ├── simd_benchmark.cpp                # 基础SIMD性能测试
+│   ├── advanced_simd_benchmark.cpp       # 高级SIMD性能测试  
+│   ├── image_processing_simd.cpp         # 图像处理SIMD应用
+│   └── SIMD_Performance_Report.md        # 详细性能分析报告
+└── CUDA/
+    ├── vector_add.cu                     # 完整CUDA向量运算
+    ├── simple_vector_add.cu              # 简单CUDA示例
+    ├── CMakeLists.txt                    # CMake跨平台构建
+    ├── Makefile                          # 备用Makefile构建
+    ├── build_windows.bat                 # Windows自动构建脚本
+    ├── build_unix.sh                     # Unix自动构建脚本
+    ├── CudaVectorAdd.vcxproj             # Visual Studio项目文件
+    └── README.md                         # CUDA项目详细文档
 ```
 
 ## CPU并行计算 - SIMD技术
@@ -36,6 +45,41 @@ make run          # 运行基础性能测试
 make run-advanced # 运行高级性能测试
 make run-image    # 运行图像处理测试
 ```
+
+## GPU并行计算 - CUDA技术
+
+### 项目概述
+
+CUDA项目实现了GPU加速的向量运算，提供完整的跨平台解决方案。包含从简单的向量加法到复杂的并行算法，展示了GPU并行计算的强大能力。
+
+### 核心特性
+
+1. **大规模并行**: 支持百万级元素的向量运算
+2. **跨平台支持**: Windows/Linux/macOS全平台兼容
+3. **性能优化**: 多种优化策略和详细分析
+4. **完整工具链**: 自动化构建和测试脚本
+
+### 快速开始
+
+#### Windows
+```cmd
+cd CUDA
+build_windows.bat  # 自动构建和运行
+```
+
+#### Linux/macOS
+```bash
+cd CUDA
+chmod +x build_unix.sh
+./build_unix.sh     # 自动构建和运行
+```
+
+### 性能对比
+
+| 技术 | 并行度 | 适用场景 | 典型加速比 |
+|------|--------|----------|------------|
+| SIMD | 8-16元素 | CPU计算密集型 | 2-8x |
+| CUDA | 数千线程 | 大规模并行 | 10-100x |
 
 ### 实测性能亮点
 
