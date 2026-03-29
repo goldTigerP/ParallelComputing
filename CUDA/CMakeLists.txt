@@ -6,6 +6,18 @@ project(CudaVectorOperations
     DESCRIPTION "跨平台CUDA向量运算性能测试"
     LANGUAGES CXX CUDA)
 
+# 检测编译器和平台
+if(WIN32)
+    message(STATUS "目标平台: Windows")
+    if(MSVC)
+        message(STATUS "编译器: MSVC ${MSVC_VERSION}")
+    elseif(MINGW)
+        message(STATUS "编译器: MinGW")
+    endif()
+else()
+    message(STATUS "目标平台: ${CMAKE_SYSTEM_NAME}")
+endif()
+
 # C++标准设置
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,32 +28,48 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 
-# 查找CUDA
-find_package(CUDA REQUIRED)
-enable_language(CUDA)
+# 查找CUDA - 更灵活的查找方式
+find_package(CUDAToolkit QUIET)
+if(NOT CUDAToolkit_FOUND)
+    find_package(CUDA REQUIRED)
+    enable_language(CUDA)
+else()
+    enable_language(CUDA)
+endif()
 
 # 输出配置信息
-message(STATUS "CUDA版本: ${CUDA_VERSION}")
-message(STATUS "CUDA工具包路径: ${CUDA_TOOLKIT_ROOT_DIR}")
+if(CUDAToolkit_FOUND)
+    message(STATUS "CUDA版本: ${CUDAToolkit_VERSION}")
+    message(STATUS "CUDA工具包路径: ${CUDAToolkit_TARGET_DIR}")
+elseif(CUDA_FOUND)
+    message(STATUS "CUDA版本: ${CUDA_VERSION}")
+    message(STATUS "CUDA工具包路径: ${CUDA_TOOLKIT_ROOT_DIR}")
+endif()
 
-# 编译选项
-if(WIN32)
-    # Windows特定设置
+# 编译选项 - 根据编译器调整
+if(MSVC)
+    # Visual Studio编译器
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /W3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /EHsc")
     # 设置CUDA架构
     set(CMAKE_CUDA_ARCHITECTURES "50;61;75;86")
-else()
-    # Linux/macOS设置
+elseif(MINGW)
+    # MinGW编译器
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wall")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-    # 设置CUDA架构
+    set(CMAKE_CUDA_ARCHITECTURES "50;61;75;86")
+    # MinGW特殊设置
+    set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+else()
+    # Linux/macOS编译器
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wall")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
     set(CMAKE_CUDA_ARCHITECTURES "50;61;75;86")
 endif()
 
 # Release模式优化
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    if(WIN32)
+    if(MSVC)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -use_fast_math")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
     else()
@@ -58,18 +86,24 @@ add_executable(simple_vector_add simple_vector_add.cu)
 set_property(TARGET vector_add PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET simple_vector_add PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-# 链接CUDA库
-if(WIN32)
-    target_link_libraries(vector_add ${CUDA_LIBRARIES} ${CUDA_CUDART_LIBRARY})
-    target_link_libraries(simple_vector_add ${CUDA_LIBRARIES} ${CUDA_CUDART_LIBRARY})
+# 链接CUDA库 - 更灵活的方式
+if(CUDAToolkit_FOUND)
+    target_link_libraries(vector_add CUDA::cudart CUDA::cuda_driver)
+    target_link_libraries(simple_vector_add CUDA::cudart CUDA::cuda_driver)
+    target_include_directories(vector_add PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
+    target_include_directories(simple_vector_add PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
 else()
-    target_link_libraries(vector_add ${CUDA_LIBRARIES})
-    target_link_libraries(simple_vector_add ${CUDA_LIBRARIES})
+    # 回退到旧的CUDA查找方式
+    if(WIN32)
+        target_link_libraries(vector_add ${CUDA_LIBRARIES} ${CUDA_CUDART_LIBRARY})
+        target_link_libraries(simple_vector_add ${CUDA_LIBRARIES} ${CUDA_CUDART_LIBRARY})
+    else()
+        target_link_libraries(vector_add ${CUDA_LIBRARIES})
+        target_link_libraries(simple_vector_add ${CUDA_LIBRARIES})
+    endif()
+    target_include_directories(vector_add PRIVATE ${CUDA_INCLUDE_DIRS})
+    target_include_directories(simple_vector_add PRIVATE ${CUDA_INCLUDE_DIRS})
 endif()
-
-# 包含目录
-target_include_directories(vector_add PRIVATE ${CUDA_INCLUDE_DIRS})
-target_include_directories(simple_vector_add PRIVATE ${CUDA_INCLUDE_DIRS})
 
 # 安装规则
 install(TARGETS vector_add simple_vector_add
