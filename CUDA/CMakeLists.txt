@@ -7,16 +7,28 @@ project(CudaVectorOperations
     LANGUAGES CXX CUDA)
 
 # 检测编译器和平台
+message(STATUS "=== 编译环境检测 ===")
 if(WIN32)
     message(STATUS "目标平台: Windows")
     if(MSVC)
         message(STATUS "编译器: MSVC ${MSVC_VERSION}")
+        message(STATUS "Visual Studio版本: ${CMAKE_GENERATOR}")
     elseif(MINGW)
         message(STATUS "编译器: MinGW")
+        message(STATUS "GCC版本: ${CMAKE_CXX_COMPILER_VERSION}")
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(STATUS "编译器: Clang ${CMAKE_CXX_COMPILER_VERSION}")
+    else()
+        message(STATUS "编译器: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
     endif()
 else()
     message(STATUS "目标平台: ${CMAKE_SYSTEM_NAME}")
+    message(STATUS "编译器: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 endif()
+
+# 显示编译器路径
+message(STATUS "C++编译器路径: ${CMAKE_CXX_COMPILER}")
+message(STATUS "CUDA编译器路径: ${CMAKE_CUDA_COMPILER}")
 
 # C++标准设置
 set(CMAKE_CXX_STANDARD 17)
